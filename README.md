@@ -38,7 +38,19 @@ And then add `rp2040-psram` to your project's `target_link_libraries`.
 
 ### Using in your code
 
-Include `psram_spi.h` in your file. See the documentation for this file for how to initialize and use this library.
+Include `psram_spi.h` in your file. See the [documentation for this file](https://polpo.github.io/rp2040-psram/psram__spi_8h.html) for how to initialize and use this library.
+
+The following defines _MUST_ be defined:
+
+- `PSRAM_PIN_CS` - GPIO number of the chip select pin
+- `PSRAM_PIN_SCK` - GPIO number of the clock pin
+- `PSRAM_PIN_MOSI` - GPIO number of the MOSI pin
+- `PSRAM_PIN_MISO` - GPIO number of the MISO pin
+
+Optional define:
+
+- `PSRAM_MUTEX` - Define this to put PSRAM access behind a mutex. This must be used if the PSRAM is to be used by multiple cores.
+
 
 ## Projects that use rp2040-psram
 
