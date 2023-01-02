@@ -1,0 +1,37 @@
+CMakeFiles/psram-test.dir/Users/ian/src/pico/pico-sdk/src/rp2_common/pico_standard_link/binary_info.c.obj: \
+ /Users/ian/src/pico/pico-sdk/src/rp2_common/pico_standard_link/binary_info.c \
+ /Users/ian/src/pico/pico-sdk/src/common/pico_binary_info/include/pico/binary_info.h \
+ /Users/ian/src/pico/pico-sdk/src/common/pico_binary_info/include/pico/binary_info/defs.h \
+ /Users/ian/src/pico/pico-sdk/src/common/pico_binary_info/include/pico/binary_info/structure.h \
+ /opt/local/lib/gcc/arm-none-eabi/12.2.0/include/stdint.h \
+ /opt/local/arm-none-eabi/include/stdint.h \
+ /opt/local/arm-none-eabi/include/machine/_default_types.h \
+ /opt/local/arm-none-eabi/include/sys/features.h \
+ /opt/local/arm-none-eabi/include/_newlib_version.h \
+ /opt/local/arm-none-eabi/include/sys/_intsup.h \
+ /opt/local/arm-none-eabi/include/sys/_stdint.h \
+ /Users/ian/src/pico/pico-sdk/src/common/pico_binary_info/include/pico/binary_info/code.h \
+ /Users/ian/src/pico/pico-sdk/src/common/pico_base/include/pico.h \
+ /Users/ian/src/pico/pico-sdk/src/common/pico_base/include/pico/types.h \
+ /Users/ian/src/pico/pico-sdk/src/common/pico_base/include/pico/assert.h \
+ /opt/local/lib/gcc/arm-none-eabi/12.2.0/include/stdbool.h \
+ /opt/local/arm-none-eabi/include/assert.h \
+ /opt/local/arm-none-eabi/include/_ansi.h \
+ /opt/local/arm-none-eabi/include/newlib.h \
+ /opt/local/arm-none-eabi/include/sys/config.h \
+ /opt/local/arm-none-eabi/include/machine/ieeefp.h \
+ /opt/local/lib/gcc/arm-none-eabi/12.2.0/include/stddef.h \
+ /Users/ian/src/rp2040-psram/examples/build/generated/pico_base/pico/version.h \
+ /Users/ian/src/pico/pico-sdk/src/common/pico_base/include/pico/config.h \
+ /Users/ian/src/rp2040-psram/examples/build/generated/pico_base/pico/config_autogen.h \
+ /Users/ian/src/pico/pico-sdk/src/boards/include/boards/pico.h \
+ /Users/ian/src/pico/pico-sdk/src/rp2_common/cmsis/include/cmsis/rename_exceptions.h \
+ /Users/ian/src/pico/pico-sdk/src/rp2_common/pico_platform/include/pico/platform.h \
+ /Users/ian/src/pico/pico-sdk/src/rp2040/hardware_regs/include/hardware/platform_defs.h \
+ /Users/ian/src/pico/pico-sdk/src/rp2040/hardware_regs/include/hardware/regs/addressmap.h \
+ /Users/ian/src/pico/pico-sdk/src/rp2040/hardware_regs/include/hardware/regs/sio.h \
+ /opt/local/arm-none-eabi/include/sys/cdefs.h \
+ /Users/ian/src/pico/pico-sdk/src/common/pico_base/include/pico/types.h \
+ /Users/ian/src/pico/pico-sdk/src/common/pico_base/include/pico/error.h \
+ /Users/ian/src/pico/pico-sdk/src/rp2_common/boot_stage2/include/boot_stage2/config.h \
+ /Users/ian/src/pico/pico-sdk/src/common/pico_base/include/pico/config.h

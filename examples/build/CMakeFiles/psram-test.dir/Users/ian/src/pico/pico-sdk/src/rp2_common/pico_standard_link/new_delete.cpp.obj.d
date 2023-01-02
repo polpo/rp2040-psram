@@ -1,0 +1,25 @@
+CMakeFiles/psram-test.dir/Users/ian/src/pico/pico-sdk/src/rp2_common/pico_standard_link/new_delete.cpp.obj: \
+ /Users/ian/src/pico/pico-sdk/src/rp2_common/pico_standard_link/new_delete.cpp \
+ /opt/local/arm-none-eabi/include/c++/12.2.0/cstdlib \
+ /opt/local/arm-none-eabi/include/c++/12.2.0/arm-none-eabi/thumb/v6-m/nofp/bits/c++config.h \
+ /opt/local/arm-none-eabi/include/c++/12.2.0/arm-none-eabi/thumb/v6-m/nofp/bits/os_defines.h \
+ /opt/local/arm-none-eabi/include/c++/12.2.0/arm-none-eabi/thumb/v6-m/nofp/bits/cpu_defines.h \
+ /opt/local/arm-none-eabi/include/c++/12.2.0/pstl/pstl_config.h \
+ /opt/local/arm-none-eabi/include/stdlib.h \
+ /opt/local/arm-none-eabi/include/machine/ieeefp.h \
+ /opt/local/arm-none-eabi/include/_ansi.h \
+ /opt/local/arm-none-eabi/include/newlib.h \
+ /opt/local/arm-none-eabi/include/_newlib_version.h \
+ /opt/local/arm-none-eabi/include/sys/config.h \
+ /opt/local/arm-none-eabi/include/sys/features.h \
+ /opt/local/lib/gcc/arm-none-eabi/12.2.0/include/stddef.h \
+ /opt/local/arm-none-eabi/include/sys/reent.h \
+ /opt/local/arm-none-eabi/include/_ansi.h \
+ /opt/local/arm-none-eabi/include/sys/_types.h \
+ /opt/local/arm-none-eabi/include/machine/_types.h \
+ /opt/local/arm-none-eabi/include/machine/_default_types.h \
+ /opt/local/arm-none-eabi/include/sys/lock.h \
+ /opt/local/arm-none-eabi/include/sys/cdefs.h \
+ /opt/local/arm-none-eabi/include/machine/stdlib.h \
+ /opt/local/arm-none-eabi/include/alloca.h \
+ /opt/local/arm-none-eabi/include/c++/12.2.0/bits/std_abs.h

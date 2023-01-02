@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/CMakeFiles/PioasmBuild"
+		},
+		{
+			"file" : "/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/CMakeFiles/PioasmBuild.rule"
+		},
+		{
+			"file" : "/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/CMakeFiles/PioasmBuild-complete.rule"
+		},
+		{
+			"file" : "/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-build.rule"
+		},
+		{
+			"file" : "/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-configure.rule"
+		},
+		{
+			"file" : "/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-download.rule"
+		},
+		{
+			"file" : "/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-install.rule"
+		},
+		{
+			"file" : "/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-mkdir.rule"
+		},
+		{
+			"file" : "/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-patch.rule"
+		},
+		{
+			"file" : "/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"PioasmBuild"
+		],
+		"name" : "PioasmBuild"
+	}
+}

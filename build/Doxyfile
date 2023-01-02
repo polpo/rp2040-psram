@@ -1,0 +1,6 @@
+PROJECT_NAME = "rp2040-psram"
+PROJECT_BRIEF = "A header-only library to allow access to SPI PSRAM via PIO on the RP2040 microcontroller."
+PROJECT_NUMBER = "1.0.0"
+GENERATE_LATEX = NO
+OUTPUT_DIRECTORY = /Users/ian/src/rp2040-psram/build/docs/
+INPUT = /Users/ian/src/rp2040-psram

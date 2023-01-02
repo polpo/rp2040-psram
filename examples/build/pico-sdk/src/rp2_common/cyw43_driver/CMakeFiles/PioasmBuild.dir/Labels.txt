@@ -1,0 +1,13 @@
+# Target labels
+ PioasmBuild
+# Source files and their labels
+/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/CMakeFiles/PioasmBuild
+/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/CMakeFiles/PioasmBuild.rule
+/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/CMakeFiles/PioasmBuild-complete.rule
+/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-build.rule
+/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-configure.rule
+/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-download.rule
+/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-install.rule
+/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-mkdir.rule
+/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-patch.rule
+/Users/ian/src/rp2040-psram/examples/build/pico-sdk/src/rp2_common/cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-update.rule

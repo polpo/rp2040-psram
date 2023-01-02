@@ -1,0 +1,3 @@
+/Users/ian/src/rp2040-psram/build/CMakeFiles/doc_doxygen.dir
+/Users/ian/src/rp2040-psram/build/CMakeFiles/edit_cache.dir
+/Users/ian/src/rp2040-psram/build/CMakeFiles/rebuild_cache.dir
