@@ -4,63 +4,39 @@ cmake_minimum_required(VERSION 3.13)
 
 set(CMAKE_C_STANDARD 11)
 
-# Initialise pico_sdk from installed location
-# (note this can come from environment, CMake cache etc)
-set(PICO_SDK_PATH "${CMAKE_SOURCE_DIR}/../pico/pico-sdk")
-
-# Pull in Raspberry Pi Pico SDK (must be before project)
-include(pico_sdk_import.cmake)
-
-project(psram-test C CXX ASM)
-
-# set(PICO_DEOPTIMIZED_DEBUG "1")
-set(CMAKE_BUILD_TYPE "Release")
-set(PICO_COPY_TO_RAM 1)
-
-# Initialise the Raspberry Pi Pico SDK
-pico_sdk_init()
-
-# Add executable. Default name is the project name, version 0.1
-add_executable(psram-test psram-test.c)
-pico_set_program_version(psram-test "1.0.0")
-
-add_compile_definitions(
-    PICO_DEFAULT_UART=0
-    PICO_DEFAULT_UART_TX_PIN=0
-    PICO_DEFAULT_UART_RX_PIN=-1
+project(rp2040-psram
+    VERSION 1.0.0
+    DESCRIPTION "A header-only library to allow access to SPI PSRAM via PIO on the RP2040 microcontroller."
 )
 
-# CE 9
-# SCK 10
-# SI/SIO0 11
-# SO/SIO1 12
-# SIO2 13
-# SIO3 14
-target_compile_definitions(psram-test PRIVATE
-    PSRAM_MUTEX=1
-    # PSRAM_SPINLOCK=1
-    PSRAM_PIN_CS=9
-    PSRAM_PIN_SCK=10
-    PSRAM_PIN_MOSI=11
-    PSRAM_PIN_MISO=12
-    PSRAM_PIN_SIO2=13
-    PSRAM_PIN_SIO3=14
-)
+add_library(rp2040-psram INTERFACE)
+target_include_directories(rp2040-psram INTERFACE ${CMAKE_CURRENT_LIST_DIR})
 
-pico_generate_pio_header(psram-test ${CMAKE_CURRENT_LIST_DIR}/psram_spi.pio)
+if(PICO_SDK)
+    pico_generate_pio_header(rp2040-psram ${CMAKE_CURRENT_LIST_DIR}/psram_spi.pio)
+endif(PICO_SDK)
 
-target_link_libraries(
-    psram-test
-    pico_stdlib
-    hardware_pio
-    hardware_dma
-    hardware_pll
-)
+option(BUILD_PSRAM_DOCS "Build documentation" OFF)
 
-pico_add_extra_outputs(psram-test)
+if(BUILD_PSRAM_DOCS)
+    # check if Doxygen is installed
+    find_package(Doxygen)
+    if (DOXYGEN_FOUND)
+        # set input and output files
+        set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
+        set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
-add_custom_target(
-    program
-    DEPENDS psram-test
-    COMMAND openocd -f interface/picoprobe.cfg -f target/rp2040.cfg -c "program psram-test.elf verify reset exit"
-)
+        # request to configure the file
+        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+        message("Doxygen build started")
+
+        # note the option ALL which allows to build the docs together with the application
+        add_custom_target( doc_doxygen ALL
+            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "Generating API documentation with Doxygen"
+            VERBATIM )
+    else (DOXYGEN_FOUND)
+      message("Doxygen need to be installed to generate the doxygen documentation")
+    endif (DOXYGEN_FOUND)
+endif(BUILD_PSRAM_DOCS)
