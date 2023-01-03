@@ -1,6 +1,6 @@
 # rp2040-psram
 
-A header-only library to allow access to SPI PSRAM via PIO on the RP2040 microcontroller as used on the Raspberry Pi Pico. Due to the timing requirements of these PSRAM devices, reading data from them at high speed (>84MHz) requires the following clock behavior:
+A header-only C library to allow access to SPI PSRAM via PIO on the RP2040 microcontroller as used on the Raspberry Pi Pico. Due to the timing requirements of these PSRAM devices, reading data from them at high speed (>84MHz) requires the following clock behavior:
 
 - Read data needs to be sampled on the clock falling edge.
 - An extra "fudge factor" clock cycle is required before reading data.
