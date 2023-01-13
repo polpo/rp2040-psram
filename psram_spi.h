@@ -54,6 +54,8 @@ SOFTWARE.
 #include "hardware/dma.h"
 #if defined(PSRAM_MUTEX)
 #include "pico/mutex.h"
+#elif defined(PSRAM_SPINLOCK)
+#include "hardware/sync.h"
 #endif
 #include "stdio.h"
 
@@ -71,19 +73,26 @@ extern "C" {
  */
 typedef struct psram_spi_inst {
     PIO pio;
-    uint sm;
+    int sm;
 #if defined(PSRAM_MUTEX)
     mutex_t mtx;
+#elif defined(PSRAM_SPINLOCK)
+    spin_lock_t* spinlock;
+    uint32_t spin_irq_state;
 #endif
     int write_dma_chan;
     dma_channel_config write_dma_chan_config;
     int read_dma_chan;
     dma_channel_config read_dma_chan_config;
+#if defined(PSRAM_ASYNC)
     int async_dma_chan;
     dma_channel_config async_dma_chan_config;
+#endif
 } psram_spi_inst_t;
 
-static psram_spi_inst_t* async_spi_inst;
+#if defined(PSRAM_ASYNC)
+extern psram_spi_inst_t* async_spi_inst;
+#endif
 
 /**
  * @brief Write and read raw data to the PSRAM SPI PIO, driven by the CPU
@@ -109,6 +118,8 @@ __force_inline extern void __time_critical_func(pio_spi_write_read_blocking)(
 
 #if defined(PSRAM_MUTEX)
     mutex_enter_blocking(&spi->mtx); 
+#elif defined(PSRAM_SPINLOCK)
+    spi->spin_irq_state = spin_lock_blocking(spi->spinlock);
 #endif
     io_rw_8 *txfifo = (io_rw_8 *) &spi->pio->txf[spi->sm];
     while (tx_remain) {
@@ -128,6 +139,8 @@ __force_inline extern void __time_critical_func(pio_spi_write_read_blocking)(
 
 #if defined(PSRAM_MUTEX)
     mutex_exit(&spi->mtx);
+#elif defined(PSRAM_SPINLOCK)
+    spin_unlock(spi->spinlock, spi->spin_irq_state);
 #endif
 }
 
@@ -149,11 +162,19 @@ __force_inline extern void __time_critical_func(pio_spi_write_dma_blocking)(
 ) {
 #ifdef PSRAM_MUTEX
     mutex_enter_blocking(&spi->mtx); 
+#elif defined(PSRAM_SPINLOCK)
+    spi->spin_irq_state = spin_lock_blocking(spi->spinlock);
+#elif defined(PSRAM_WAITDMA)
+    dma_channel_wait_for_finish_blocking(spi->async_dma_chan);
+    dma_channel_wait_for_finish_blocking(spi->write_dma_chan);
+    dma_channel_wait_for_finish_blocking(spi->read_dma_chan);
 #endif
     dma_channel_transfer_from_buffer_now(spi->write_dma_chan, src, src_len);
     dma_channel_wait_for_finish_blocking(spi->write_dma_chan);
 #ifdef PSRAM_MUTEX
     mutex_exit(&spi->mtx);
+#elif defined(PSRAM_SPINLOCK)
+    spin_unlock(spi->spinlock, spi->spin_irq_state);
 #endif
 }
 
@@ -180,6 +201,12 @@ __force_inline extern void __time_critical_func(pio_spi_write_read_dma_blocking)
 ) {
 #ifdef PSRAM_MUTEX
     mutex_enter_blocking(&spi->mtx); 
+#elif defined(PSRAM_SPINLOCK)
+    spi->spin_irq_state = spin_lock_blocking(spi->spinlock);
+#elif defined(PSRAM_WAITDMA)
+    dma_channel_wait_for_finish_blocking(spi->async_dma_chan);
+    dma_channel_wait_for_finish_blocking(spi->write_dma_chan);
+    dma_channel_wait_for_finish_blocking(spi->read_dma_chan);
 #endif
     dma_channel_transfer_from_buffer_now(spi->write_dma_chan, src, src_len);
     dma_channel_transfer_to_buffer_now(spi->read_dma_chan, dst, dst_len);
@@ -187,14 +214,8 @@ __force_inline extern void __time_critical_func(pio_spi_write_read_dma_blocking)
     dma_channel_wait_for_finish_blocking(spi->read_dma_chan);
 #ifdef PSRAM_MUTEX
     mutex_exit(&spi->mtx);
-#endif
-}
-
-/// @private
-void __isr dma_complete_handler() {
-    dma_hw->ints1 = 1u << async_spi_inst->async_dma_chan;
-#ifdef PSRAM_MUTEX
-    mutex_exit(&async_spi_inst->mtx);
+#elif defined(PSRAM_SPINLOCK)
+    spin_unlock(spi->spinlock, spi->spin_irq_state);
 #endif
 }
 
@@ -209,19 +230,25 @@ void __isr dma_complete_handler() {
  * @param src Pointer to the source data to write.
  * @param src_len Length of the source data in bytes.
  */
+#if defined(PSRAM_ASYNC)
 __force_inline extern void __time_critical_func(pio_spi_write_async)(
         psram_spi_inst_t* spi,
         const uint8_t* src, const size_t src_len
 ) {
 #ifdef PSRAM_MUTEX
     mutex_enter_blocking(&spi->mtx); 
+#elif defined(PSRAM_SPINLOCK)
+    spi->spin_irq_state = spin_lock_blocking(spi->spinlock);
+#elif defined(PSRAM_WAITDMA)
+    dma_channel_wait_for_finish_blocking(spi->write_dma_chan);
+    dma_channel_wait_for_finish_blocking(spi->read_dma_chan);
 #endif
-
     dma_channel_wait_for_finish_blocking(spi->async_dma_chan);
     async_spi_inst = spi;
 
     dma_channel_transfer_from_buffer_now(spi->async_dma_chan, src, src_len);
 }
+#endif
 
 
 /**
@@ -231,76 +258,8 @@ __force_inline extern void __time_critical_func(pio_spi_write_async)(
  * @return The PSRAM configuration instance. This instance should be passed to
  * all PSRAM access functions.
  */
-psram_spi_inst_t psram_spi_init(void) {
-    uint spi_offset = pio_add_program(pio1, &spi_fudge_program);
-    uint spi_sm = pio_claim_unused_sm(pio1, true);
-    psram_spi_inst_t spi;
-    spi.pio = pio1;
-    spi.sm = spi_sm;
-#if defined(PSRAM_MUTEX)
-    mutex_init(&spi.mtx);
-#endif
-
-    gpio_set_drive_strength(PSRAM_PIN_CS, GPIO_DRIVE_STRENGTH_2MA);
-    gpio_set_drive_strength(PSRAM_PIN_SCK, GPIO_DRIVE_STRENGTH_2MA);
-    gpio_set_drive_strength(PSRAM_PIN_MOSI, GPIO_DRIVE_STRENGTH_2MA);
-    gpio_set_slew_rate(PSRAM_PIN_CS, GPIO_SLEW_RATE_FAST);
-    gpio_set_slew_rate(PSRAM_PIN_SCK, GPIO_SLEW_RATE_FAST);
-    gpio_set_slew_rate(PSRAM_PIN_MOSI, GPIO_SLEW_RATE_FAST);
-
-    pio_spi_fudge_cs_init(pio1, spi_sm, spi_offset, 8 /*n_bits*/, 1 /*clkdiv*/, PSRAM_PIN_CS, PSRAM_PIN_MOSI, PSRAM_PIN_MISO);
-
-    // Write DMA channel setup
-    spi.write_dma_chan = dma_claim_unused_channel(true);
-    spi.write_dma_chan_config = dma_channel_get_default_config(spi.write_dma_chan);
-    channel_config_set_transfer_data_size(&spi.write_dma_chan_config, DMA_SIZE_8);
-    channel_config_set_read_increment(&spi.write_dma_chan_config, true);
-    channel_config_set_write_increment(&spi.write_dma_chan_config, false);
-    channel_config_set_dreq(&spi.write_dma_chan_config, pio_get_dreq(spi.pio, spi.sm, true));
-    dma_channel_set_write_addr(spi.write_dma_chan, &spi.pio->txf[spi.sm], false);
-    dma_channel_set_config(spi.write_dma_chan, &spi.write_dma_chan_config, false);
-
-    // Read DMA channel setup
-    spi.read_dma_chan = dma_claim_unused_channel(true);
-    spi.read_dma_chan_config = dma_channel_get_default_config(spi.read_dma_chan);
-    channel_config_set_transfer_data_size(&spi.read_dma_chan_config, DMA_SIZE_8);
-    channel_config_set_read_increment(&spi.read_dma_chan_config, false);
-    channel_config_set_write_increment(&spi.read_dma_chan_config, true);
-    channel_config_set_dreq(&spi.read_dma_chan_config, pio_get_dreq(spi.pio, spi.sm, false));
-    dma_channel_set_read_addr(spi.read_dma_chan, &spi.pio->rxf[spi.sm], false);
-    dma_channel_set_config(spi.read_dma_chan, &spi.read_dma_chan_config, false);
-
-    // Asynchronous DMA channel setup
-    spi.async_dma_chan = dma_claim_unused_channel(true);
-    spi.async_dma_chan_config = dma_channel_get_default_config(spi.async_dma_chan);
-    channel_config_set_transfer_data_size(&spi.async_dma_chan_config, DMA_SIZE_8);
-    channel_config_set_read_increment(&spi.async_dma_chan_config, true);
-    channel_config_set_write_increment(&spi.async_dma_chan_config, false);
-    channel_config_set_dreq(&spi.async_dma_chan_config, pio_get_dreq(spi.pio, spi.sm, true));
-    dma_channel_set_write_addr(spi.async_dma_chan, &spi.pio->txf[spi.sm], false);
-    dma_channel_set_config(spi.async_dma_chan, &spi.async_dma_chan_config, false);
-    irq_set_exclusive_handler(DMA_IRQ_1, dma_complete_handler);
-    dma_irqn_set_channel_enabled(1, spi.async_dma_chan, true);
-    irq_set_enabled(DMA_IRQ_1, true);
-
-    uint8_t psram_reset_en_cmd[] = {
-        8,      // 8 bits to write
-        0,      // 0 bits to read
-        0x66u   // Reset enable command
-    };
-    pio_spi_write_read_dma_blocking(&spi, psram_reset_en_cmd, 3, 0, 0);
-    busy_wait_us(50);
-    uint8_t psram_reset_cmd[] = {
-        8,      // 8 bits to write
-        0,      // 0 bits to read
-        0x99u   // Reset command
-    };
-    pio_spi_write_read_dma_blocking(&spi, psram_reset_cmd, 3, 0, 0);
-    busy_wait_us(100);
-    
-    return spi;
-};
-
+psram_spi_inst_t psram_spi_init(PIO pio, int sm);
+int test_psram(psram_spi_inst_t* psram_spi);
 
 static uint8_t write8_command[] = {
     40,         // 40 bits write
@@ -320,6 +279,7 @@ static uint8_t write8_command[] = {
  * @param addr Address to write to.
  * @param val Value to write.
  */
+#if defined(PSRAM_ASYNC)
 __force_inline extern void psram_write8_async(psram_spi_inst_t* spi, uint32_t addr, uint8_t val) {
     write8_command[3] = addr >> 16;
     write8_command[4] = addr >> 8;
@@ -328,6 +288,7 @@ __force_inline extern void psram_write8_async(psram_spi_inst_t* spi, uint32_t ad
 
     pio_spi_write_async(spi, write8_command, sizeof(write8_command));
 };
+#endif
 
 
 /**
@@ -558,6 +519,7 @@ __force_inline extern void psram_read(psram_spi_inst_t* spi, const uint32_t addr
 
     pio_spi_write_read_dma_blocking(spi, read_command, sizeof(read_command), dst, count);
 };
+
 
 #ifdef __cplusplus
 }
