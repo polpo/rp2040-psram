@@ -2,8 +2,7 @@
 
 #include <stdio.h>
 
-#if defined(PSRAM_ASYNC)
-#if defined(PSRAM_MUTEX) || defined(PSRAM_SPINLOCK)
+#if defined(PSRAM_ASYNC) && defined(PSRAM_ASYNC_COMPLETE)
 void __isr psram_dma_complete_handler() {
 #if PSRAM_ASYNC_DMA_IRQ == 0
     dma_hw->ints0 = 1u << async_spi_inst->async_dma_chan;
@@ -19,8 +18,7 @@ void __isr psram_dma_complete_handler() {
     spin_unlock(async_spi_inst->spinlock, async_spi_inst->spin_irq_state);
 #endif
 }
-#endif // defined(PSRAM_MUTEX) || defined(PSRAM_SPINLOCK)
-#endif // defined(PSRAM_ASYNC)
+#endif // defined(PSRAM_ASYNC) && defined(PSRAM_ASYNC_COMPLETE)
 
 
 psram_spi_inst_t psram_spi_init(PIO pio, int sm) {
@@ -79,16 +77,11 @@ psram_spi_inst_t psram_spi_init(PIO pio, int sm) {
     dma_channel_set_write_addr(spi.async_dma_chan, &spi.pio->txf[spi.sm], false);
     dma_channel_set_config(spi.async_dma_chan, &spi.async_dma_chan_config, false);
 
-#if defined(PSRAM_MUTEX) || defined(PSRAM_SPINLOCK)
+#if defined(PSRAM_ASYNC_COMPLETE)
     irq_set_exclusive_handler(DMA_IRQ_0 + PSRAM_ASYNC_DMA_IRQ, psram_dma_complete_handler);
     dma_irqn_set_channel_enabled(PSRAM_ASYNC_DMA_IRQ, spi.async_dma_chan, true);
     irq_set_enabled(DMA_IRQ_0 + PSRAM_ASYNC_DMA_IRQ, true);
-    /*
-    irq_set_exclusive_handler(DMA_IRQ_1, psram_dma_complete_handler);
-    dma_irqn_set_channel_enabled(1, spi.async_dma_chan, true);
-    irq_set_enabled(DMA_IRQ_1, true);
-    */
-#endif // defined(PSRAM_MUTEX) || defined(PSRAM_SPINLOCK)
+#endif // defined(PSRAM_ASYNC_COMPLETE)
 #endif // defined(PSRAM_ASYNC)
 
     uint8_t psram_reset_en_cmd[] = {

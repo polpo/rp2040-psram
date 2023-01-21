@@ -164,18 +164,21 @@ __force_inline extern void __time_critical_func(pio_spi_write_dma_blocking)(
     mutex_enter_blocking(&spi->mtx); 
 #elif defined(PSRAM_SPINLOCK)
     spi->spin_irq_state = spin_lock_blocking(spi->spinlock);
-#elif defined(PSRAM_WAITDMA)
+#endif // PSRAM_SPINLOCK
+#if defined(PSRAM_WAITDMA)
+#if defined(PSRAM_ASYNC)
     dma_channel_wait_for_finish_blocking(spi->async_dma_chan);
+#endif // PSRAM_ASYNC
     dma_channel_wait_for_finish_blocking(spi->write_dma_chan);
     dma_channel_wait_for_finish_blocking(spi->read_dma_chan);
-#endif
+#endif // PSRAM_WAITDMA
     dma_channel_transfer_from_buffer_now(spi->write_dma_chan, src, src_len);
     dma_channel_wait_for_finish_blocking(spi->write_dma_chan);
 #ifdef PSRAM_MUTEX
     mutex_exit(&spi->mtx);
 #elif defined(PSRAM_SPINLOCK)
     spin_unlock(spi->spinlock, spi->spin_irq_state);
-#endif
+#endif // PSRAM_SPINLOCK
 }
 
 /**
@@ -203,11 +206,14 @@ __force_inline extern void __time_critical_func(pio_spi_write_read_dma_blocking)
     mutex_enter_blocking(&spi->mtx); 
 #elif defined(PSRAM_SPINLOCK)
     spi->spin_irq_state = spin_lock_blocking(spi->spinlock);
-#elif defined(PSRAM_WAITDMA)
+#endif // PSRAM_SPINLOCK
+#if defined(PSRAM_WAITDMA)
+#if defined(PSRAM_ASYNC)
     dma_channel_wait_for_finish_blocking(spi->async_dma_chan);
+#endif // PSRAM_ASYNC
     dma_channel_wait_for_finish_blocking(spi->write_dma_chan);
     dma_channel_wait_for_finish_blocking(spi->read_dma_chan);
-#endif
+#endif // PSRAM_WAITDMA
     dma_channel_transfer_from_buffer_now(spi->write_dma_chan, src, src_len);
     dma_channel_transfer_to_buffer_now(spi->read_dma_chan, dst, dst_len);
     dma_channel_wait_for_finish_blocking(spi->write_dma_chan);
@@ -216,7 +222,7 @@ __force_inline extern void __time_critical_func(pio_spi_write_read_dma_blocking)
     mutex_exit(&spi->mtx);
 #elif defined(PSRAM_SPINLOCK)
     spin_unlock(spi->spinlock, spi->spin_irq_state);
-#endif
+#endif // PSRAM_SPINLOCK
 }
 
 /**
@@ -235,14 +241,14 @@ __force_inline extern void __time_critical_func(pio_spi_write_async)(
         psram_spi_inst_t* spi,
         const uint8_t* src, const size_t src_len
 ) {
-#ifdef PSRAM_MUTEX
+#ifdef PSRAM_MUTEXx
     mutex_enter_blocking(&spi->mtx); 
-#elif defined(PSRAM_SPINLOCK)
+#elif defined(PSRAM_SPINLOCKx)
     spi->spin_irq_state = spin_lock_blocking(spi->spinlock);
-#elif defined(PSRAM_WAITDMA)
+#endif // PSRAM_SPINLOCK
+    // Wait for all DMA to PSRAM to complete
     dma_channel_wait_for_finish_blocking(spi->write_dma_chan);
     dma_channel_wait_for_finish_blocking(spi->read_dma_chan);
-#endif
     dma_channel_wait_for_finish_blocking(spi->async_dma_chan);
     async_spi_inst = spi;
 
