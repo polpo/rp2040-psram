@@ -4,7 +4,8 @@
 #include <pico/stdlib.h>
 
 #include "psram_spi.h"
-pio_spi_inst_t psram_spi;
+
+psram_spi_inst_t* async_spi_inst;
 
 int main()
 {
@@ -16,7 +17,7 @@ int main()
     puts("PSRAM test - rp2040-psram v1.0.0");
 
     puts("Initing PSRAM...");
-    psram_spi = psram_init();
+    psram_spi_inst_t psram_spi = psram_spi_init(pio0, -1);
 
     uint32_t psram_begin, psram_elapsed;
     float psram_speed;

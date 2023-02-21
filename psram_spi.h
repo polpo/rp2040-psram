@@ -109,7 +109,7 @@ extern psram_spi_inst_t* async_spi_inst;
  * @param dst_len Length of the destination data in bytes. Set to 0 if no data
  * is to be read.
  */
-__force_inline extern void __time_critical_func(pio_spi_write_read_blocking)(
+__force_inline static void __time_critical_func(pio_spi_write_read_blocking)(
         psram_spi_inst_t* spi,
         const uint8_t* src, const size_t src_len,
         uint8_t* dst, const size_t dst_len
@@ -156,7 +156,7 @@ __force_inline extern void __time_critical_func(pio_spi_write_read_blocking)(
  * @param src Pointer to the source data to write.
  * @param src_len Length of the source data in bytes.
  */
-__force_inline extern void __time_critical_func(pio_spi_write_dma_blocking)(
+__force_inline static void __time_critical_func(pio_spi_write_dma_blocking)(
         psram_spi_inst_t* spi,
         const uint8_t* src, const size_t src_len
 ) {
@@ -197,7 +197,7 @@ __force_inline extern void __time_critical_func(pio_spi_write_dma_blocking)(
  * @param dst_len Length of the destination data in bytes. Set to 0 if no data
  * is to be read.
  */
-__force_inline extern void __time_critical_func(pio_spi_write_read_dma_blocking)(
+__force_inline static void __time_critical_func(pio_spi_write_read_dma_blocking)(
         psram_spi_inst_t* spi,
         const uint8_t* src, const size_t src_len,
         uint8_t* dst, const size_t dst_len
@@ -237,7 +237,7 @@ __force_inline extern void __time_critical_func(pio_spi_write_read_dma_blocking)
  * @param src_len Length of the source data in bytes.
  */
 #if defined(PSRAM_ASYNC)
-__force_inline extern void __time_critical_func(pio_spi_write_async)(
+__force_inline static void __time_critical_func(pio_spi_write_async)(
         psram_spi_inst_t* spi,
         const uint8_t* src, const size_t src_len
 ) {
@@ -286,7 +286,7 @@ static uint8_t write8_command[] = {
  * @param val Value to write.
  */
 #if defined(PSRAM_ASYNC)
-__force_inline extern void psram_write8_async(psram_spi_inst_t* spi, uint32_t addr, uint8_t val) {
+__force_inline static void psram_write8_async(psram_spi_inst_t* spi, uint32_t addr, uint8_t val) {
     write8_command[3] = addr >> 16;
     write8_command[4] = addr >> 8;
     write8_command[5] = addr;
@@ -309,7 +309,7 @@ __force_inline extern void psram_write8_async(psram_spi_inst_t* spi, uint32_t ad
  * @param addr Address to write to.
  * @param val Value to write.
  */
-__force_inline extern void psram_write8(psram_spi_inst_t* spi, uint32_t addr, uint8_t val) {
+__force_inline static void psram_write8(psram_spi_inst_t* spi, uint32_t addr, uint8_t val) {
     write8_command[3] = addr >> 16;
     write8_command[4] = addr >> 8;
     write8_command[5] = addr;
@@ -338,7 +338,7 @@ static uint8_t read8_command[] = {
  * @param addr Address to read from.
  * @return The data at the specified address.
  */
-__force_inline extern uint8_t psram_read8(psram_spi_inst_t* spi, uint32_t addr) {
+__force_inline static uint8_t psram_read8(psram_spi_inst_t* spi, uint32_t addr) {
     read8_command[3] = addr >> 16;
     read8_command[4] = addr >> 8;
     read8_command[5] = addr;
@@ -368,7 +368,7 @@ static uint8_t write16_command[] = {
  * @param addr Address to write to.
  * @param val Value to write.
  */
-__force_inline extern void psram_write16(psram_spi_inst_t* spi, uint32_t addr, uint16_t val) {
+__force_inline static void psram_write16(psram_spi_inst_t* spi, uint32_t addr, uint16_t val) {
     write16_command[3] = addr >> 16;
     write16_command[4] = addr >> 8;
     write16_command[5] = addr;
@@ -398,7 +398,7 @@ static uint8_t read16_command[] = {
  * @param addr Address to read from.
  * @return The data at the specified address.
  */
-__force_inline extern uint16_t psram_read16(psram_spi_inst_t* spi, uint32_t addr) {
+__force_inline static uint16_t psram_read16(psram_spi_inst_t* spi, uint32_t addr) {
     read16_command[3] = addr >> 16;
     read16_command[4] = addr >> 8;
     read16_command[5] = addr;
@@ -428,7 +428,7 @@ static uint8_t write32_command[] = {
  * @param addr Address to write to.
  * @param val Value to write.
  */
-__force_inline extern void psram_write32(psram_spi_inst_t* spi, uint32_t addr, uint32_t val) {
+__force_inline static void psram_write32(psram_spi_inst_t* spi, uint32_t addr, uint32_t val) {
     // Break the address into three bytes and send read command
     write32_command[3] = addr >> 16;
     write32_command[4] = addr >> 8;
@@ -461,7 +461,7 @@ static uint8_t read32_command[] = {
  * @param addr Address to read from.
  * @return The data at the specified address.
  */
-__force_inline extern uint32_t psram_read32(psram_spi_inst_t* spi, uint32_t addr) {
+__force_inline static uint32_t psram_read32(psram_spi_inst_t* spi, uint32_t addr) {
     read32_command[3] = addr >> 16;
     read32_command[4] = addr >> 8;
     read32_command[5] = addr;
@@ -488,7 +488,7 @@ static uint8_t write_command[] = {
  * @param src Pointer to the source data to write.
  * @param count Number of bytes to write.
  */
-__force_inline extern void psram_write(psram_spi_inst_t* spi, const uint32_t addr, const uint8_t* src, const size_t count) {
+__force_inline static void psram_write(psram_spi_inst_t* spi, const uint32_t addr, const uint8_t* src, const size_t count) {
     // Break the address into three bytes and send read command
     write_command[0] = (4 + count) * 8;
     write_command[3] = addr >> 16;
@@ -517,7 +517,7 @@ static uint8_t read_command[] = {
  * @param dst Pointer to the destination for the read data.
  * @param count Number of bytes to read.
  */
-__force_inline extern void psram_read(psram_spi_inst_t* spi, const uint32_t addr, uint8_t* dst, const size_t count) {
+__force_inline static void psram_read(psram_spi_inst_t* spi, const uint32_t addr, uint8_t* dst, const size_t count) {
     read_command[1] = count * 8;
     read_command[3] = addr >> 16;
     read_command[4] = addr >> 8;

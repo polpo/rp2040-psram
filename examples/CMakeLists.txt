@@ -30,8 +30,9 @@ add_compile_definitions(
 )
 
 target_compile_definitions(psram-test PRIVATE
-    PSRAM_MUTEX=1
-    # PSRAM_SPINLOCK=1
+    # PSRAM_MUTEX=1
+    PSRAM_SPINLOCK=1
+    PSRAM_ASYNC=1
     PSRAM_PIN_CS=9
     PSRAM_PIN_SCK=10
     PSRAM_PIN_MOSI=11
