@@ -57,7 +57,7 @@ SOFTWARE.
 #elif defined(PSRAM_SPINLOCK)
 #include "hardware/sync.h"
 #endif
-#include "stdio.h"
+#include <string.h>
 
 #include "psram_spi.pio.h"
 
@@ -241,11 +241,13 @@ __force_inline static void __time_critical_func(pio_spi_write_async)(
         psram_spi_inst_t* spi,
         const uint8_t* src, const size_t src_len
 ) {
-#ifdef PSRAM_MUTEXx
+#if defined(PSRAM_ASYNC_SYNCHRONIZE)
+#ifdef PSRAM_MUTEX
     mutex_enter_blocking(&spi->mtx); 
-#elif defined(PSRAM_SPINLOCKx)
+#elif defined(PSRAM_SPINLOCK)
     spi->spin_irq_state = spin_lock_blocking(spi->spinlock);
 #endif // PSRAM_SPINLOCK
+#endif // defined(PSRAM_ASYNC_SYNCHRONIZE)
     // Wait for all DMA to PSRAM to complete
     dma_channel_wait_for_finish_blocking(spi->write_dma_chan);
     dma_channel_wait_for_finish_blocking(spi->read_dma_chan);
@@ -524,6 +526,32 @@ __force_inline static void psram_read(psram_spi_inst_t* spi, const uint32_t addr
     read_command[5] = addr;
 
     pio_spi_write_read_dma_blocking(spi, read_command, sizeof(read_command), dst, count);
+};
+
+
+static uint8_t write_async_fast_command[134] = {
+    0,          // n bits write
+    0,          // 0 bits read
+    0x02u      // Fast write command
+};
+/**
+ * @brief Write @c count bytes of data to a given address asynchronously to the
+ * PSRAM SPI PIO, driven by DMA without CPU involvement. 
+ *
+ * @param spi The PSRAM configuration instance returned from psram_spi_init().
+ * @param addr Address to write to.
+ * @param src Pointer to the source data to write.
+ * @param count Number of bytes to write.
+ */
+__force_inline static void psram_write_async_fast(psram_spi_inst_t* spi, uint32_t addr, uint8_t* val, const size_t count) {
+    write_async_fast_command[0] = (4 + count) * 8;
+    write_async_fast_command[3] = addr >> 16;
+    write_async_fast_command[4] = addr >> 8;
+    write_async_fast_command[5] = addr;
+
+    memcpy(write_async_fast_command + 6, val, count);
+
+    pio_spi_write_async(spi, write_async_fast_command, 6 + count);
 };
 
 

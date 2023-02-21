@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#if defined(PSRAM_ASYNC) && defined(PSRAM_ASYNC_COMPLETE)
+#if defined(PSRAM_ASYNC) && defined(PSRAM_ASYNC_SYNCHRONIZE)
 void __isr psram_dma_complete_handler() {
 #if PSRAM_ASYNC_DMA_IRQ == 0
     dma_hw->ints0 = 1u << async_spi_inst->async_dma_chan;
@@ -18,7 +18,7 @@ void __isr psram_dma_complete_handler() {
     spin_unlock(async_spi_inst->spinlock, async_spi_inst->spin_irq_state);
 #endif
 }
-#endif // defined(PSRAM_ASYNC) && defined(PSRAM_ASYNC_COMPLETE)
+#endif // defined(PSRAM_ASYNC) && defined(PSRAM_ASYNC_SYNCHRONIZE)
 
 
 psram_spi_inst_t psram_spi_init(PIO pio, int sm) {
