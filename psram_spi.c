@@ -20,8 +20,7 @@ void __isr psram_dma_complete_handler() {
 }
 #endif // defined(PSRAM_ASYNC) && defined(PSRAM_ASYNC_SYNCHRONIZE)
 
-
-psram_spi_inst_t psram_spi_init(PIO pio, int sm) {
+psram_spi_inst_t psram_spi_init_clkdiv(PIO pio, int sm, float clkdiv) {
     psram_spi_inst_t spi;
     spi.pio = pio;
     uint spi_offset = pio_add_program(spi.pio, &spi_fudge_program);
@@ -44,7 +43,7 @@ psram_spi_inst_t psram_spi_init(PIO pio, int sm) {
     gpio_set_slew_rate(PSRAM_PIN_SCK, GPIO_SLEW_RATE_FAST);
     gpio_set_slew_rate(PSRAM_PIN_MOSI, GPIO_SLEW_RATE_FAST);
 
-    pio_spi_fudge_cs_init(spi.pio, spi.sm, spi_offset, 8 /*n_bits*/, 1 /*clkdiv*/, PSRAM_PIN_CS, PSRAM_PIN_MOSI, PSRAM_PIN_MISO);
+    pio_spi_fudge_cs_init(spi.pio, spi.sm, spi_offset, 8 /*n_bits*/, clkdiv, PSRAM_PIN_CS, PSRAM_PIN_MOSI, PSRAM_PIN_MISO);
 
     // Write DMA channel setup
     spi.write_dma_chan = dma_claim_unused_channel(true);
@@ -101,6 +100,10 @@ psram_spi_inst_t psram_spi_init(PIO pio, int sm) {
     
     return spi;
 };
+
+psram_spi_inst_t psram_spi_init(PIO pio, int sm) {
+    return psram_spi_init_clkdiv(pio, sm, 1.0);
+}
 
 int test_psram(psram_spi_inst_t* psram_spi) {
     puts("Writing PSRAM...");

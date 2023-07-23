@@ -263,6 +263,30 @@ __force_inline static void __time_critical_func(pio_spi_write_async)(
  * @brief Initialize the PSRAM over SPI. This function must be called before
  * accessing PSRAM.
  *
+ * @param pio The PIO instance to use (PIO0 or PIO1).
+ * @param sm The state machine number in the PIO module to use. If -1 is given,
+ * will use the first available state machine.
+ * @param clkdiv Clock divisor for the state machine. At RP2040 speeds greater
+ * than 280MHz, a clkdiv >1.0 is needed. For example, at 400MHz, a clkdiv of
+ * 1.6 is recommended.
+ *
+ * @return The PSRAM configuration instance. This instance should be passed to
+ * all PSRAM access functions.
+ */
+psram_spi_inst_t psram_spi_init_clkdiv(PIO pio, int sm, float clkdiv);
+
+/**
+ * @brief Initialize the PSRAM over SPI. This function must be called before
+ * accessing PSRAM.
+ *
+ * Defaults to a clkdiv of 1.0. This function is provided for backwards
+ * compatibility. Use psram_spi_init_clkdiv instead if you want a clkdiv other
+ * than 1.0.
+ *
+ * @param pio The PIO instance to use (PIO0 or PIO1).
+ * @param sm The state machine number in the PIO module to use. If -1 is given,
+ * will use the first available state machine.
+ *
  * @return The PSRAM configuration instance. This instance should be passed to
  * all PSRAM access functions.
  */
