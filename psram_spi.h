@@ -294,7 +294,7 @@ psram_spi_inst_t psram_spi_init_clkdiv(PIO pio, int sm, float clkdiv, bool fudge
  * all PSRAM access functions.
  */
 psram_spi_inst_t psram_spi_init(PIO pio, int sm);
-int test_psram(psram_spi_inst_t* psram_spi);
+int test_psram(psram_spi_inst_t* psram_spi, int increment);
 
 static uint8_t write8_command[] = {
     40,         // 40 bits write

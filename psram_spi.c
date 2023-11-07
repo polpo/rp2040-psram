@@ -105,16 +105,16 @@ psram_spi_inst_t psram_spi_init(PIO pio, int sm) {
     return psram_spi_init_clkdiv(pio, sm, 1.0, true);
 }
 
-int test_psram(psram_spi_inst_t* psram_spi) {
+int test_psram(psram_spi_inst_t* psram_spi, int increment) {
     puts("Writing PSRAM...");
     uint8_t deadbeef[8] = {0xd, 0xe, 0xa, 0xd, 0xb, 0xe, 0xe, 0xf};
-    for (uint32_t addr = 0; addr < (1024 * 1024); ++addr) {
+    for (uint32_t addr = 0; addr < (1024 * 1024); addr += increment) {
         psram_write8(psram_spi, addr, (addr & 0xFF));
         // psram_write8_async(psram_spi, addr, (addr & 0xFF));
     }
     puts("Reading PSRAM...");
     uint32_t psram_begin = time_us_32();
-    for (uint32_t addr = 0; addr < (1024 * 1024); ++addr) {
+    for (uint32_t addr = 0; addr < (1024 * 1024); addr += increment) {
         uint8_t result = psram_read8(psram_spi, addr);
         if ((uint8_t)(addr & 0xFF) != result) {
             printf("\nPSRAM failure at address %x (%x != %x)\n", addr, addr & 0xFF, result);
