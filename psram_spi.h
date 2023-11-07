@@ -74,6 +74,7 @@ extern "C" {
 typedef struct psram_spi_inst {
     PIO pio;
     int sm;
+    uint offset;
 #if defined(PSRAM_MUTEX)
     mutex_t mtx;
 #elif defined(PSRAM_SPINLOCK)
@@ -295,6 +296,8 @@ psram_spi_inst_t psram_spi_init_clkdiv(PIO pio, int sm, float clkdiv, bool fudge
  */
 psram_spi_inst_t psram_spi_init(PIO pio, int sm);
 int test_psram(psram_spi_inst_t* psram_spi, int increment);
+
+void psram_spi_uninit(psram_spi_inst_t spi, bool fudge);
 
 static uint8_t write8_command[] = {
     40,         // 40 bits write
