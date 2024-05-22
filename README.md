@@ -63,3 +63,7 @@ Optional define:
 ## Projects that use rp2040-psram
 
 [PicoGUS](https://github.com/polpo/picogus) - uses PSRAM to emulate the Gravis Ultrasound's 1MB sample RAM
+
+# License
+
+rp2040-psram is licensed under the MIT license (see LICENSE)
