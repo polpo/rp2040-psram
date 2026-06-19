@@ -75,6 +75,8 @@ typedef struct psram_spi_inst {
     PIO pio;
     int sm;
     uint offset;
+    bool quad;
+    bool fudge;
 #if defined(PSRAM_MUTEX)
     mutex_t mtx;
 #elif defined(PSRAM_SPINLOCK)
@@ -118,7 +120,7 @@ __force_inline static void __time_critical_func(pio_spi_write_read_blocking)(
     size_t tx_remain = src_len, rx_remain = dst_len;
 
 #if defined(PSRAM_MUTEX)
-    mutex_enter_blocking(&spi->mtx); 
+    mutex_enter_blocking(&spi->mtx);
 #elif defined(PSRAM_SPINLOCK)
     spi->spin_irq_state = spin_lock_blocking(spi->spinlock);
 #endif
@@ -147,7 +149,7 @@ __force_inline static void __time_critical_func(pio_spi_write_read_blocking)(
 
 /**
  * @brief Write raw data to the PSRAM SPI PIO, driven by DMA without CPU
- * involvement. 
+ * involvement.
  *
  * It's recommended to use DMA when possible as it's higher speed. Used to send
  * raw commands to the PSRAM. This function is faster than
@@ -162,7 +164,7 @@ __force_inline static void __time_critical_func(pio_spi_write_dma_blocking)(
         const uint8_t* src, const size_t src_len
 ) {
 #ifdef PSRAM_MUTEX
-    mutex_enter_blocking(&spi->mtx); 
+    mutex_enter_blocking(&spi->mtx);
 #elif defined(PSRAM_SPINLOCK)
     spi->spin_irq_state = spin_lock_blocking(spi->spinlock);
 #endif // PSRAM_SPINLOCK
@@ -184,7 +186,7 @@ __force_inline static void __time_critical_func(pio_spi_write_dma_blocking)(
 
 /**
  * @brief Write and read raw data to the PSRAM SPI PIO, driven by DMA without CPU
- * involvement. 
+ * involvement.
  *
  * It's recommended to use DMA when possible as it's higher speed. Used to send
  * raw commands and receive data from the PSRAM. Usually the @c psram_write* and
@@ -204,7 +206,7 @@ __force_inline static void __time_critical_func(pio_spi_write_read_dma_blocking)
         uint8_t* dst, const size_t dst_len
 ) {
 #ifdef PSRAM_MUTEX
-    mutex_enter_blocking(&spi->mtx); 
+    mutex_enter_blocking(&spi->mtx);
 #elif defined(PSRAM_SPINLOCK)
     spi->spin_irq_state = spin_lock_blocking(spi->spinlock);
 #endif // PSRAM_SPINLOCK
@@ -228,7 +230,7 @@ __force_inline static void __time_critical_func(pio_spi_write_read_dma_blocking)
 
 /**
  * @brief Write raw data asynchronously to the PSRAM SPI PIO, driven by DMA without CPU
- * involvement. 
+ * involvement.
  *
  * Used to send raw commands to the PSRAM. Usually the @c psram_write*_async()
  * command should be used instead.
@@ -244,7 +246,7 @@ __force_inline static void __time_critical_func(pio_spi_write_async)(
 ) {
 #if defined(PSRAM_ASYNC_SYNCHRONIZE)
 #ifdef PSRAM_MUTEX
-    mutex_enter_blocking(&spi->mtx); 
+    mutex_enter_blocking(&spi->mtx);
 #elif defined(PSRAM_SPINLOCK)
     spi->spin_irq_state = spin_lock_blocking(spi->spinlock);
 #endif // PSRAM_SPINLOCK
@@ -277,8 +279,7 @@ __force_inline static void __time_critical_func(pio_spi_write_async)(
  * @return The PSRAM configuration instance. This instance should be passed to
  * all PSRAM access functions.
  */
-psram_spi_inst_t psram_spi_init_clkdiv(PIO pio, int sm, float clkdiv, bool fudge);
-
+psram_spi_inst_t psram_spi_init_clkdiv(PIO pio, int sm, float clkdiv, bool fudge, bool quad);
 /**
  * @brief Initialize the PSRAM over SPI. This function must be called before
  * accessing PSRAM.
@@ -295,9 +296,10 @@ psram_spi_inst_t psram_spi_init_clkdiv(PIO pio, int sm, float clkdiv, bool fudge
  * all PSRAM access functions.
  */
 psram_spi_inst_t psram_spi_init(PIO pio, int sm);
+psram_spi_inst_t psram_qpi_init(PIO pio, int sm);
 int test_psram(psram_spi_inst_t* psram_spi, int increment);
 
-void psram_spi_uninit(psram_spi_inst_t spi, bool fudge);
+void psram_spi_uninit(psram_spi_inst_t spi);
 
 static uint8_t write8_command[] = {
     40,         // 40 bits write
@@ -306,6 +308,15 @@ static uint8_t write8_command[] = {
     0, 0, 0,    // Address
     0           // 8 bits data
 };
+
+static uint8_t write8_quad_command[] = {
+    10,         // 40 bits write
+    0,          // 0 bits read
+    0x38u,      // Write command
+    0, 0, 0,    // Address
+    0           // 8 bits data
+};
+
 /**
  * @brief Write 8 bits of data to a given address asynchronously to the PSRAM SPI PIO,
  * driven by DMA without CPU involvement.
@@ -319,12 +330,15 @@ static uint8_t write8_command[] = {
  */
 #if defined(PSRAM_ASYNC)
 __force_inline static void psram_write8_async(psram_spi_inst_t* spi, uint32_t addr, uint8_t val) {
-    write8_command[3] = addr >> 16;
-    write8_command[4] = addr >> 8;
-    write8_command[5] = addr;
-    write8_command[6] = val;
+    uint8_t* cmd = spi->quad ? write8_quad_command : write8_command;
+    size_t cmd_len = spi->quad ? sizeof(write8_quad_command) : sizeof(write8_command);
 
-    pio_spi_write_async(spi, write8_command, sizeof(write8_command));
+    cmd[3] = (uint8_t)(addr >> 16);
+    cmd[4] = (uint8_t)(addr >> 8);
+    cmd[5] = (uint8_t)addr;
+    cmd[6] = val;
+
+    pio_spi_write_async(spi, cmd, cmd_len);
 };
 #endif
 
@@ -342,12 +356,15 @@ __force_inline static void psram_write8_async(psram_spi_inst_t* spi, uint32_t ad
  * @param val Value to write.
  */
 __force_inline static void psram_write8(psram_spi_inst_t* spi, uint32_t addr, uint8_t val) {
-    write8_command[3] = addr >> 16;
-    write8_command[4] = addr >> 8;
-    write8_command[5] = addr;
-    write8_command[6] = val;
+    uint8_t* cmd = spi->quad ? write8_quad_command : write8_command;
+    size_t cmd_len = spi->quad ? sizeof(write8_quad_command) : sizeof(write8_command);
 
-    pio_spi_write_dma_blocking(spi, write8_command, sizeof(write8_command));
+    cmd[3] = (uint8_t)(addr >> 16);
+    cmd[4] = (uint8_t)(addr >> 8);
+    cmd[5] = (uint8_t)addr;
+    cmd[6] = val;
+
+    pio_spi_write_dma_blocking(spi, cmd, cmd_len);
 };
 
 
@@ -357,6 +374,13 @@ static uint8_t read8_command[] = {
     0x0bu,      // Fast read command
     0, 0, 0,    // Address
     0           // 8 delay cycles
+};
+static uint8_t read8_quad_command[] = {
+    14,         // 48 bits write
+    2,          // 8 bits read
+    0xebu,      // Fast read command
+    0, 0, 0,    // Address
+    0, 0, 0     // 6 delay cycles
 };
 /**
  * @brief Read 8 bits of data from a given address to the PSRAM SPI PIO,
@@ -371,20 +395,30 @@ static uint8_t read8_command[] = {
  * @return The data at the specified address.
  */
 __force_inline static uint8_t psram_read8(psram_spi_inst_t* spi, uint32_t addr) {
-    read8_command[3] = addr >> 16;
-    read8_command[4] = addr >> 8;
-    read8_command[5] = addr;
+    uint8_t val;
+    uint8_t* cmd = spi->quad ? read8_quad_command : read8_command;
+    size_t cmd_len = spi->quad ? sizeof(read8_quad_command) : sizeof(read8_command);
 
-    uint8_t val; 
-    pio_spi_write_read_dma_blocking(spi, read8_command, sizeof(read8_command), &val, 1);
+    cmd[3] = (uint8_t)(addr >> 16);
+    cmd[4] = (uint8_t)(addr >> 8);
+    cmd[5] = (uint8_t)addr;
+
+    pio_spi_write_read_dma_blocking(spi, cmd, cmd_len, &val, 1);
+
     return val;
 };
-
 
 static uint8_t write16_command[] = {
     48,         // 48 bits write
     0,          // 0 bits read
     0x02u,      // Write command
+    0, 0, 0,    // Address
+    0, 0        // 16 bits data
+};
+static uint8_t write16_quad_command[] = {
+    12,         // 48 bits write
+    0,          // 0 bits read
+    0x38u,      // Write command
     0, 0, 0,    // Address
     0, 0        // 16 bits data
 };
@@ -401,13 +435,16 @@ static uint8_t write16_command[] = {
  * @param val Value to write.
  */
 __force_inline static void psram_write16(psram_spi_inst_t* spi, uint32_t addr, uint16_t val) {
-    write16_command[3] = addr >> 16;
-    write16_command[4] = addr >> 8;
-    write16_command[5] = addr;
-    write16_command[6] = val;
-    write16_command[7] = val >> 8;
+    uint8_t* cmd = spi->quad ? write16_quad_command : write16_command;
+    size_t cmd_len = spi->quad ? sizeof(write16_quad_command) : sizeof(write16_command);
 
-    pio_spi_write_dma_blocking(spi, write16_command, sizeof(write16_command));
+    cmd[3] = (uint8_t)(addr >> 16);
+    cmd[4] = (uint8_t)(addr >> 8);
+    cmd[5] = (uint8_t)addr;
+    cmd[6] = (uint8_t)val;
+    cmd[7] = (uint8_t)(val >> 8);
+
+    pio_spi_write_dma_blocking(spi, cmd, cmd_len);
 };
 
 
@@ -417,6 +454,14 @@ static uint8_t read16_command[] = {
     0x0bu,      // Fast read command
     0, 0, 0,    // Address
     0           // 8 delay cycles
+};
+
+static uint8_t read16_quad_command[] = {
+    14,         // 40 bits write
+    4,         // 16 bits read / 4 nimbles
+    0xebu,      // Fast read command
+    0, 0, 0,    // Address
+    0, 0, 0   // 6 duty cycles
 };
 /**
  * @brief Read 16 bits of data from a given address to the PSRAM SPI PIO,
@@ -431,12 +476,16 @@ static uint8_t read16_command[] = {
  * @return The data at the specified address.
  */
 __force_inline static uint16_t psram_read16(psram_spi_inst_t* spi, uint32_t addr) {
-    read16_command[3] = addr >> 16;
-    read16_command[4] = addr >> 8;
-    read16_command[5] = addr;
+    uint16_t val;
+    uint8_t* cmd = spi->quad ? read16_quad_command : read16_command;
+    size_t cmd_len = spi->quad ? sizeof(read16_quad_command) : sizeof(read16_command);
 
-    uint16_t val; 
-    pio_spi_write_read_dma_blocking(spi, read16_command, sizeof(read16_command), (unsigned char*)&val, 2);
+    cmd[3] = (uint8_t)(addr >> 16);
+    cmd[4] = (uint8_t)(addr >> 8);
+    cmd[5] = (uint8_t)addr;
+
+    pio_spi_write_read_dma_blocking(spi, cmd, cmd_len, (unsigned char*)&val, 2);
+
     return val;
 };
 
@@ -445,6 +494,14 @@ static uint8_t write32_command[] = {
     64,         // 64 bits write
     0,          // 0 bits read
     0x02u,      // Write command
+    0, 0, 0,    // Address
+    0, 0, 0, 0  // 32 bits data
+};
+
+static uint8_t write32_quad_command[] = {
+    16,         // 64 bits write
+    0,          // 0 bits read
+    0x38u,      // Write command
     0, 0, 0,    // Address
     0, 0, 0, 0  // 32 bits data
 };
@@ -461,18 +518,19 @@ static uint8_t write32_command[] = {
  * @param val Value to write.
  */
 __force_inline static void psram_write32(psram_spi_inst_t* spi, uint32_t addr, uint32_t val) {
-    // Break the address into three bytes and send read command
-    write32_command[3] = addr >> 16;
-    write32_command[4] = addr >> 8;
-    write32_command[5] = addr;
-    write32_command[6] = val;
-    write32_command[7] = val >> 8;
-    write32_command[8] = val >> 16;
-    write32_command[9] = val >> 24;
+    uint8_t* cmd = spi->quad ? write32_quad_command : write32_command;
+    size_t cmd_len = spi->quad ? sizeof(write32_quad_command) : sizeof(write32_command);
 
-    pio_spi_write_dma_blocking(spi, write32_command, sizeof(write32_command));
+    cmd[3] = (uint8_t)(addr >> 16);
+    cmd[4] = (uint8_t)(addr >> 8);
+    cmd[5] = (uint8_t)addr;
+    cmd[6] = (uint8_t)val;
+    cmd[7] = (uint8_t)(val >> 8);
+    cmd[8] = (uint8_t)(val >> 16);
+    cmd[9] = (uint8_t)(val >> 24);
+
+    pio_spi_write_dma_blocking(spi, cmd, cmd_len);
 };
-
 
 /**
  * @brief Write 32 bits of data to a given address asynchronously to the PSRAM
@@ -485,19 +543,22 @@ __force_inline static void psram_write32(psram_spi_inst_t* spi, uint32_t addr, u
  * @param addr Address to write to.
  * @param val Value to write.
  */
+#if defined(PSRAM_ASYNC)
 __force_inline static void psram_write32_async(psram_spi_inst_t* spi, uint32_t addr, uint32_t val) {
-    // Break the address into three bytes and send read command
-    write32_command[3] = addr >> 16;
-    write32_command[4] = addr >> 8;
-    write32_command[5] = addr;
-    write32_command[6] = val;
-    write32_command[7] = val >> 8;
-    write32_command[8] = val >> 16;
-    write32_command[9] = val >> 24;
+    uint8_t* cmd = spi->quad ? write32_quad_command : write32_command;
+    size_t cmd_len = spi->quad ? sizeof(write32_quad_command) : sizeof(write32_command);
 
-    pio_spi_write_async(spi, write32_command, sizeof(write32_command));
+    cmd[3] = (uint8_t)(addr >> 16);
+    cmd[4] = (uint8_t)(addr >> 8);
+    cmd[5] = (uint8_t)addr;
+    cmd[6] = (uint8_t)val;
+    cmd[7] = (uint8_t)(val >> 8);
+    cmd[8] = (uint8_t)(val >> 16);
+    cmd[9] = (uint8_t)(val >> 24);
+
+    pio_spi_write_async(spi, cmd, cmd_len);
 };
-
+#endif
 
 static uint8_t read32_command[] = {
     40,         // 40 bits write
@@ -505,6 +566,14 @@ static uint8_t read32_command[] = {
     0x0bu,      // Fast read command
     0, 0, 0,    // Address
     0           // 8 delay cycles
+};
+
+static uint8_t read32_quad_command[] = {
+    14,         // 40 bits write
+    8,          // 32 bits read
+    0xebu,      // Fast read command
+    0, 0, 0,    // Address
+    0, 0, 0     // 6 delay cycles
 };
 /**
  * @brief Read 32 bits of data from a given address to the PSRAM SPI PIO,
@@ -519,20 +588,29 @@ static uint8_t read32_command[] = {
  * @return The data at the specified address.
  */
 __force_inline static uint32_t psram_read32(psram_spi_inst_t* spi, uint32_t addr) {
-    read32_command[3] = addr >> 16;
-    read32_command[4] = addr >> 8;
-    read32_command[5] = addr;
-
     uint32_t val;
-    pio_spi_write_read_dma_blocking(spi, read32_command, sizeof(read32_command), (unsigned char*)&val, 4);
+    uint8_t* cmd = spi->quad ? read32_quad_command : read32_command;
+    size_t cmd_len = spi->quad ? sizeof(read32_quad_command) : sizeof(read32_command);
+
+    cmd[3] = (uint8_t)(addr >> 16);
+    cmd[4] = (uint8_t)(addr >> 8);
+    cmd[5] = (uint8_t)addr;
+
+    pio_spi_write_read_dma_blocking(spi, cmd, cmd_len, (unsigned char*)&val, 4);
+
     return val;
 };
-
 
 static uint8_t write_command[] = {
     0,          // n bits write
     0,          // 0 bits read
     0x02u,      // Fast write command
+    0, 0, 0     // Address
+};
+static uint8_t write_quad_command[] = {
+    0,          // n bits write
+    0,          // 0 bits read
+    0x38u,      // Fast write command
     0, 0, 0     // Address
 };
 /**
@@ -546,13 +624,15 @@ static uint8_t write_command[] = {
  * @param count Number of bytes to write.
  */
 __force_inline static void psram_write(psram_spi_inst_t* spi, const uint32_t addr, const uint8_t* src, const size_t count) {
-    // Break the address into three bytes and send read command
-    write_command[0] = (4 + count) * 8;
-    write_command[3] = addr >> 16;
-    write_command[4] = addr >> 8;
-    write_command[5] = addr;
+    uint8_t* cmd = spi->quad ? write_quad_command : write_command;
+    size_t cmd_len = spi->quad ? sizeof(write_quad_command) : sizeof(write_command);
 
-    pio_spi_write_dma_blocking(spi, write_command, sizeof(write_command));
+    cmd[0] = spi->quad ? (uint8_t)((4 + count) * 2) : (uint8_t)((4 + count) * 8);
+    cmd[3] = (uint8_t)(addr >> 16);
+    cmd[4] = (uint8_t)(addr >> 8);
+    cmd[5] = (uint8_t)addr;
+
+    pio_spi_write_dma_blocking(spi, cmd, cmd_len);
     pio_spi_write_dma_blocking(spi, src, count);
 };
 
@@ -563,6 +643,13 @@ static uint8_t read_command[] = {
     0x0bu,      // Fast read command
     0, 0, 0,    // Address
     0           // 8 delay cycles
+};
+static uint8_t read_quad_command[] = {
+    14,         // 56 bits write
+    0,          // n bits read
+    0xebu,      // Fast read command
+    0, 0, 0,    // Address
+    0, 0, 0,    // 6 delay cycles
 };
 /**
  * @brief Read @c count bits of data from a given address to the PSRAM SPI PIO,
@@ -575,40 +662,50 @@ static uint8_t read_command[] = {
  * @param count Number of bytes to read.
  */
 __force_inline static void psram_read(psram_spi_inst_t* spi, const uint32_t addr, uint8_t* dst, const size_t count) {
-    read_command[1] = count * 8;
-    read_command[3] = addr >> 16;
-    read_command[4] = addr >> 8;
-    read_command[5] = addr;
+    uint8_t* cmd = spi->quad ? read_quad_command : read_command;
+    size_t cmd_len = spi->quad ? sizeof(read_quad_command) : sizeof(read_command);
 
-    pio_spi_write_read_dma_blocking(spi, read_command, sizeof(read_command), dst, count);
-};
+    cmd[1] = spi->quad ? (uint8_t)(count * 2) : (uint8_t)(count * 8);
+    cmd[3] = (uint8_t)(addr >> 16);
+    cmd[4] = (uint8_t)(addr >> 8);
+    cmd[5] = (uint8_t)addr;
 
+    pio_spi_write_read_dma_blocking(spi, cmd, cmd_len, dst, count);
+}
 
+#if defined(PSRAM_ASYNC)
 static uint8_t write_async_fast_command[134] = {
     0,          // n bits write
     0,          // 0 bits read
     0x02u      // Fast write command
 };
+static uint8_t write_quad_async_fast_command[134] = {
+    0,          // n bits write
+    0,          // 0 bits read
+    0x38u      // Fast write command
+};
 /**
  * @brief Write @c count bytes of data to a given address asynchronously to the
- * PSRAM SPI PIO, driven by DMA without CPU involvement. 
+ * PSRAM SPI PIO, driven by DMA without CPU involvement.
  *
  * @param spi The PSRAM configuration instance returned from psram_spi_init().
  * @param addr Address to write to.
  * @param src Pointer to the source data to write.
  * @param count Number of bytes to write.
  */
-__force_inline static void psram_write_async_fast(psram_spi_inst_t* spi, uint32_t addr, uint8_t* val, const size_t count) {
-    write_async_fast_command[0] = (4 + count) * 8;
-    write_async_fast_command[3] = addr >> 16;
-    write_async_fast_command[4] = addr >> 8;
-    write_async_fast_command[5] = addr;
+__force_inline static void psram_write_async_fast(psram_spi_inst_t* spi, uint32_t addr, const uint8_t* val, const size_t count) {
+    uint8_t* cmd = spi->quad ? write_quad_async_fast_command : write_async_fast_command;
 
-    memcpy(write_async_fast_command + 6, val, count);
+    cmd[0] = spi->quad ? (uint8_t)((4 + count) * 2) : (uint8_t)((4 + count) * 8);
+    cmd[3] = (uint8_t)(addr >> 16);
+    cmd[4] = (uint8_t)(addr >> 8);
+    cmd[5] = (uint8_t)addr;
 
-    pio_spi_write_async(spi, write_async_fast_command, 6 + count);
+    memcpy(cmd + 6, val, count);
+
+    pio_spi_write_async(spi, cmd, 6 + count);
 };
-
+#endif
 
 #ifdef __cplusplus
 }
